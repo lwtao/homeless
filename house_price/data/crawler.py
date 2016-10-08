@@ -49,8 +49,8 @@ def after_grab(func):
 @before_grab
 def start():
     print grabedPool["data"]
-    for i in xrange(1, 101):
-        page = "http://cq.lianjia.com/chengjiao/pg{0}/".format(str(i))
+    for i in xrange(1, 50):
+        page = "http://cs.lianjia.com/chengjiao/pg{0}/".format(str(i))
         grab(page)
         
 
@@ -61,7 +61,7 @@ def grab(url):
     r = requests.get(url, timeout= 30)
     soup = BeautifulSoup(r.content, "lxml")
 
-    tradedHoustList = soup.find("ul", class_="clinch-list").find_all('li')
+    tradedHoustList = soup.find("ul", class_="listContent").find_all('li')
 
     if not tradedHoustList:
         return 
@@ -69,7 +69,7 @@ def grab(url):
     for item in tradedHoustList:
 
         # 房屋详情链接，唯一标识符
-        houseUrl = item.find("h2").a["href"] or ''
+        houseUrl = item.find("div", class_="title").a["href"] or ''
 
 
         if houseUrl in grabedPool["data"]:
@@ -80,29 +80,29 @@ def grab(url):
 
 
         # 抓取 小区，户型，面积
-        title = item.find("h2").a
+        title = item.find("div", class_="title").a
         if title:
-            xiaoqu, houseType, square = (item.find("h2").a.string.split(" "))
+            xiaoqu, houseType, square = (title.string.split(" "))
         else:
             xiaoqu, houseType, square = ('Nav', 'Nav', 'Nav')
 
 
         # 成交时间，朝向，楼层
-        houseInfo = item.find("div", class_="con").string
+        houseInfo = item.find("div", class_="houseInfo").text
 
         if houseInfo:
-            if len(houseInfo.split("/")) == 2:
-                orientation, floor = ([x.strip() for x in houseInfo.split("/")])
+            infos = houseInfo.split("|");
+            if len(infos) == 2:
+                orientation, buildInfo = ([x.strip() for x in infos])
                 buildInfo = 'Nav'
-            if len(houseInfo.split("/")) == 3:
-                orientation, floor, buildInfo = ([x.strip() for x in houseInfo.split("/")])
+            if len(infos) == 3:
+                orientation, buildInfo = ([x.strip() for x in infos])
+                # orientation, floor, buildInfo = ([x.strip() for x in infos])
 
-        div_cuns =  item.find_all("div", class_="div-cun")
-
-        if div_cuns:
-            tradeData = datetime.datetime.strptime(div_cuns[0].get_text(), '%Y.%m.%d') or datetime.datetime(1990, 1, 1)
-            perSquarePrice = div_cuns[1].strings.next() or 'Nav'
-            totalPrice = div_cuns[2].strings.next() or 'Nav'
+        floor = item.find("span", class_="positionIcon").text
+        tradeData = datetime.datetime.strptime(item.find("div", class_="dealDate").text, '%Y.%m.%d') or datetime.datetime(1990, 1, 1)
+        perSquarePrice = item.find("div", class_="unitPrice").find("span", class_="number").text or 'Nav'
+        totalPrice = item.find("div", class_="totalPrice").find("span", class_="number").text or 'Nav'
         
 
         # 通过 ORM 存储到 sqlite

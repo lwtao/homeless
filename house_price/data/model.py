@@ -7,7 +7,7 @@
 from peewee import SqliteDatabase, Model, CharField, DateTimeField
 
 
-db = SqliteDatabase('house_price/data/houseprice.db')
+db = SqliteDatabase('e://wp/homeless/house_price/data/houseprice.db')
 
 class TradedHouse(Model):
 	xiaoqu = CharField()
